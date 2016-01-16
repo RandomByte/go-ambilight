@@ -1,6 +1,7 @@
 package main
 
 import (
+	dominantcolor "github.com/cenkalti/dominantcolor"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -84,10 +85,10 @@ func main() {
 	}).SubImage(areaRect)
 
 	for i := 0; i < len(areas); i++ {
-		color := getAverageColor(areas[i])
+		color := dominantcolor.Find(areas[i])
 		log.Println(i, color)
 
-		out, err := os.Create("./output-" + strconv.Itoa(i) + ".jpg")
+		out, err := os.Create("_test/output-" + strconv.Itoa(i) + ".jpg")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -96,31 +97,4 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-
-}
-
-func getAverageColor(img image.Image) color.RGBA {
-	var (
-		r, g, b uint32
-	)
-
-	bound := img.Bounds()
-	for y := bound.Min.Y; y < bound.Max.Y; y++ {
-		for x := bound.Min.X; x < bound.Max.X; x++ {
-			color := img.At(x, y)
-			pr, pg, pb, _ := color.RGBA()
-
-			r += pr
-			g += pg
-			b += pb
-		}
-	}
-
-	count := uint32(bound.Dx() * bound.Dy()) // width * height
-
-	r /= count
-	g /= count
-	b /= count
-
-	return color.RGBA{uint8(r), uint8(g), uint8(b), 255}
 }
