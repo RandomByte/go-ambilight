@@ -109,11 +109,22 @@ func computeDominatorColors(img *image.Image) [6]color.RGBA {
 	areaRect = image.Rect(bounds.Max.X-xA, bounds.Min.Y+y, bounds.Max.X, bounds.Max.Y)
 	areas[5] = screen.(SubImager).SubImage(areaRect)
 
+	processed := make(chan color.RGBA, 6)
+
 	for i := 0; i < len(areas); i++ {
-		colors[i] = dominantcolor.Find(areas[i])
+		go processArea(areas[i], processed)
+	}
+
+	for i := 0; i < len(areas); i++ {
+		colors[i] = <-processed
 	}
 
 	return colors
+}
+
+func processArea(area image.Image, processed chan color.RGBA) {
+	color := dominantcolor.Find(area)
+	processed <- color
 }
 
 func getScreen(img *image.Image) *image.Image {
