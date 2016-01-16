@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	dominantcolor "github.com/cenkalti/dominantcolor"
 	"image"
 	"image/color"
 	"log"
 	"math"
 	"os"
+	"os/exec"
+	"syscall"
 )
 
 type SubImager interface {
@@ -14,9 +17,14 @@ type SubImager interface {
 }
 
 func main() {
+	cam := Cam{}
+	cam.Setup()
+}
+
+func loop() {
 	file, err := os.Open("_test/pic.jpg")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Testpic missing", err)
 	}
 	defer file.Close()
 
@@ -24,7 +32,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	colors := computeDominatorColors(&img)
 	log.Println(colors)
 }
@@ -92,4 +99,33 @@ func getScreen(img *image.Image) *image.Image {
 	screenRect := image.Rect(1350, 663, 2200, 975)
 	screen := (*img).(SubImager).SubImage(screenRect)
 	return &screen
+}
+
+type Cam struct {
+	Cmd *exec.Cmd
+}
+
+func (c *Cam) Setup() {
+	// Start raspistill in signal mode
+	c.Cmd = exec.Command("raspistill", "-n", "-s", "-t 0", "--thumb none", "-o pic.jpg")
+	out := &bytes.Buffer{}
+	c.Cmd.Stdout = out
+	err := c.Cmd.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (c *Cam) Snapshot() {
+	err := c.Cmd.Process.Signal(syscall.SIGUSR1)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (c *Cam) Kill() {
+	err := c.Cmd.Process.Signal(os.Kill)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
