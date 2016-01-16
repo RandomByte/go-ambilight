@@ -3,11 +3,10 @@ package main
 import (
 	dominantcolor "github.com/cenkalti/dominantcolor"
 	"image"
-	"image/jpeg"
+	"image/color"
 	"log"
 	"math"
 	"os"
-	"strconv"
 )
 
 type SubImager interface {
@@ -26,7 +25,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	screen := getScreen(img)
+	colors := computeDominatorColors(&img)
+	log.Println(colors)
+}
+
+func computeDominatorColors(img *image.Image) [6]color.RGBA {
+	screen := *getScreen(img)
 
 	/*
 
@@ -45,7 +49,10 @@ func main() {
 	          |  20%  |    40%    |  20%  |
 
 	*/
-	var areas [6]image.Image
+	var (
+		areas  [6]image.Image
+		colors [6]color.RGBA
+	)
 
 	bounds := screen.Bounds()
 	log.Println(bounds)
@@ -74,24 +81,15 @@ func main() {
 	areas[5] = screen.(SubImager).SubImage(areaRect)
 
 	for i := 0; i < len(areas); i++ {
-		color := dominantcolor.Find(areas[i])
-		log.Println(i, color)
-		areas[i].Set(0, 0, color)
-
-		out, err := os.Create("_test/output-" + strconv.Itoa(i) + ".jpg")
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = jpeg.Encode(out, areas[i], nil)
-
-		if err != nil {
-			log.Fatal(err)
-		}
+		colors[i] = dominantcolor.Find(areas[i])
+		log.Println(i, colors[i])
 	}
+
+	return colors
 }
 
-func getScreen(img image.Image) image.Image {
+func getScreen(img *image.Image) *image.Image {
 	screenRect := image.Rect(1350, 663, 2200, 975)
-	screen := img.(SubImager).SubImage(screenRect)
-	return screen
+	screen := (*img).(SubImager).SubImage(screenRect)
+	return &screen
 }
