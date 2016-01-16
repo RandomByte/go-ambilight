@@ -1,15 +1,17 @@
 package main
 
 import (
-	"bytes"
-	dominantcolor "github.com/cenkalti/dominantcolor"
+	"github.com/cenkalti/dominantcolor"
 	"image"
 	"image/color"
+	_ "image/jpeg"
 	"log"
 	"math"
 	"os"
 	"os/exec"
+	"os/signal"
 	"syscall"
+	"time"
 )
 
 type SubImager interface {
@@ -17,26 +19,47 @@ type SubImager interface {
 }
 
 func main() {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, os.Kill, syscall.SIGTERM)
+	defer signal.Stop(sig)
+
 	cam := Cam{}
+	defer cam.Kill()
+
 	cam.Setup()
+
+	for {
+		select {
+		case <-time.After(500 * time.Millisecond):
+			loop(&cam)
+		case s := <-sig:
+			log.Println("Got signal", s)
+			log.Println("Quitting...")
+			return
+		}
+	}
 }
 
-func loop() {
-	file, err := os.Open("_test/pic.jpg")
+func loop(cam *Cam) {
+	cam.Snapshot()
+
+	file, err := os.Open("pic.jpg")
 	if err != nil {
-		log.Fatal("Testpic missing", err)
+		log.Println("No picture found - skipping loop", err)
+		return
 	}
 	defer file.Close()
 
 	img, _, err := image.Decode(file)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	colors := computeDominatorColors(&img)
 	log.Println(colors)
 }
 
 func computeDominatorColors(img *image.Image) [6]color.RGBA {
+	log.Println("Computing dominant colors...")
 	screen := *getScreen(img)
 
 	/*
@@ -62,7 +85,6 @@ func computeDominatorColors(img *image.Image) [6]color.RGBA {
 	)
 
 	bounds := screen.Bounds()
-	log.Println(bounds)
 
 	x0 := float64(bounds.Dx() / 100)
 	xA := int(math.Floor(x0 * 20))
@@ -89,7 +111,6 @@ func computeDominatorColors(img *image.Image) [6]color.RGBA {
 
 	for i := 0; i < len(areas); i++ {
 		colors[i] = dominantcolor.Find(areas[i])
-		log.Println(i, colors[i])
 	}
 
 	return colors
@@ -107,25 +128,33 @@ type Cam struct {
 
 func (c *Cam) Setup() {
 	// Start raspistill in signal mode
-	c.Cmd = exec.Command("raspistill", "-n", "-s", "-t 0", "--thumb none", "-o pic.jpg")
-	out := &bytes.Buffer{}
-	c.Cmd.Stdout = out
+	log.Println("Initializing raspistill process...")
+	c.Cmd = exec.Command("raspistill", "-v", "-n", "-s", "-t", "0", "--thumb", "none", "-o", "pic.jpg")
+
 	err := c.Cmd.Start()
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
+	// Should wait for "Waiting for SIGUSR1" in the stdout - but was unable to get it running :(
+	// So we just assume that nothing bad will happen when sending signals to it too early
+	// Also, just in case, we wait a sec
+	time.Sleep(1000 * time.Millisecond)
 }
 
 func (c *Cam) Snapshot() {
+	log.Println("Triggering snapshot...")
 	err := c.Cmd.Process.Signal(syscall.SIGUSR1)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
+
+	// Same problem as in setup - don't know when the picture got taken, just hope it went through faster than 500ms
+	time.Sleep(500 * time.Millisecond)
 }
 
 func (c *Cam) Kill() {
 	err := c.Cmd.Process.Signal(os.Kill)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }
