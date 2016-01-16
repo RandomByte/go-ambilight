@@ -3,10 +3,11 @@ package main
 import (
 	"image"
 	"image/color"
-	_ "image/jpeg"
+	"image/jpeg"
 	"log"
 	"math"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -28,19 +29,19 @@ func main() {
 
 	/*
 
-			Dividing screen into 6 areas
+	   Dividing screen into 6 areas
 
-		               A         B         A
-			 ----- -----------------------------
-				   |       |           |       |
-			 50%   |   0   |     2     |   4   |
-				   |       |           |       |
-			 ----- -----------------------------
-				   |       |           |       |
-			 50%   |   1   |     3     |   5   |
-				   |       |           |       |
-			 ----- -----------------------------
-		           |  20%  |    40%    |  20%  |
+	              A         B         A
+	    ----- -----------------------------
+	          |       |           |       |
+	    50%   |   0   |     2     |   4   |
+	          |       |           |       |
+	    ----- -----------------------------
+	          |       |           |       |
+	    50%   |   1   |     3     |   5   |
+	          |       |           |       |
+	    ----- -----------------------------
+	          |  20%  |    40%    |  20%  |
 
 	*/
 	var areas [6]image.Image
@@ -53,44 +54,49 @@ func main() {
 	bounds := screenRect
 
 	areaRect := image.Rect(bounds.Min.X, bounds.Min.Y, bounds.Min.X+xA, bounds.Min.Y+y)
-	log.Println(areaRect)
 	areas[0] = screen.(interface {
 		SubImage(r image.Rectangle) image.Image
 	}).SubImage(areaRect)
 
 	areaRect = image.Rect(bounds.Min.X, bounds.Min.Y+y, bounds.Min.X+xA, bounds.Max.Y)
-	log.Println(areaRect)
 	areas[1] = screen.(interface {
 		SubImage(r image.Rectangle) image.Image
 	}).SubImage(areaRect)
 
 	areaRect = image.Rect(bounds.Min.X+xA, bounds.Min.Y, bounds.Max.X-xA, bounds.Min.Y+y)
-	log.Println(areaRect)
 	areas[2] = screen.(interface {
 		SubImage(r image.Rectangle) image.Image
 	}).SubImage(areaRect)
 
 	areaRect = image.Rect(bounds.Min.X+xA, bounds.Min.Y+y, bounds.Max.X-xA, bounds.Max.Y)
-	log.Println(areaRect)
 	areas[3] = screen.(interface {
 		SubImage(r image.Rectangle) image.Image
 	}).SubImage(areaRect)
 
 	areaRect = image.Rect(bounds.Max.X-xA, bounds.Min.Y, bounds.Max.X, bounds.Min.Y+y)
-	log.Println(areaRect)
 	areas[4] = screen.(interface {
 		SubImage(r image.Rectangle) image.Image
 	}).SubImage(areaRect)
 
 	areaRect = image.Rect(bounds.Max.X-xA, bounds.Min.Y+y, bounds.Max.X, bounds.Max.Y)
-	log.Println(areaRect)
 	areas[5] = screen.(interface {
 		SubImage(r image.Rectangle) image.Image
 	}).SubImage(areaRect)
 
 	for i := 0; i < len(areas); i++ {
-		log.Println(getAverageColor(areas[i]))
+		color := getAverageColor(areas[i])
+		log.Println(i, color)
+
+		out, err := os.Create("./output-" + strconv.Itoa(i) + ".jpg")
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = jpeg.Encode(out, areas[i], nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
+
 }
 
 func getAverageColor(img image.Image) color.RGBA {
