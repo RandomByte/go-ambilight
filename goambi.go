@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/cenkalti/dominantcolor"
 	"image"
 	"image/color"
 	_ "image/jpeg"
 	"log"
 	"math"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -56,6 +59,8 @@ func loop(cam *Cam) {
 	}
 	colors := computeDominatorColors(&img)
 	log.Println(colors)
+
+	sendToServer(colors)
 }
 
 func computeDominatorColors(img *image.Image) [6]color.RGBA {
@@ -116,6 +121,7 @@ func computeDominatorColors(img *image.Image) [6]color.RGBA {
 	}
 
 	for i := 0; i < len(areas); i++ {
+		log.Println("Processed", i)
 		colors[i] = <-processed
 	}
 
@@ -128,9 +134,24 @@ func processArea(area image.Image, processed chan color.RGBA) {
 }
 
 func getScreen(img *image.Image) *image.Image {
-	screenRect := image.Rect(1350, 663, 2200, 975)
+	screenRect := image.Rect(1335, 747, 2184, 1231)
 	screen := (*img).(SubImager).SubImage(screenRect)
 	return &screen
+}
+
+func sendToServer(colors [6]color.RGBA) {
+	conn, err := net.Dial("udp", "192.168.2.6:64001")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	json, err := json.Marshal(colors)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Fprintf(conn, string(json))
+	conn.Close()
 }
 
 type Cam struct {
