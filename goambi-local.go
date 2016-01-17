@@ -27,15 +27,10 @@ func main() {
 	signal.Notify(sig, os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer signal.Stop(sig)
 
-	cam := Cam{}
-	defer cam.Kill()
-
-	cam.Setup()
-
 	for {
 		select {
-		case <-time.After(500 * time.Millisecond):
-			// loop(&cam)
+		case <-time.After(1 * time.Millisecond):
+			loop()
 		case s := <-sig:
 			log.Println("Got signal", s)
 			log.Println("Quitting...")
@@ -44,8 +39,9 @@ func main() {
 	}
 }
 
-func loop(cam *Cam) {
+func loop() {
 	// cam.Snapshot()
+	transmitImg()
 
 	file, err := os.Open("pic.jpg")
 	if err != nil {
@@ -164,38 +160,9 @@ func sendToServer(colors [6]color.RGBA) {
 	conn.Close()
 }
 
-type Cam struct {
-	Cmd *exec.Cmd
-}
-
-func (c *Cam) Setup() {
-	// Start raspistill in signal mode
-	log.Println("Initializing raspistill process...")
-	c.Cmd = exec.Command("raspistill", "-v", "-n", "-s", "-t", "0", "--thumb", "none", "-o", "pic.jpg", "-roi", "0.51,0.38,0.33,0.25", "-w", "648", "-h", "486", "-tl", "0", "-t", "0")
-
-	err := c.Cmd.Start()
-	if err != nil {
-		log.Panic(err)
-	}
-	// Should wait for "Waiting for SIGUSR1" in the stdout - but was unable to get it running :(
-	// So we just assume that nothing bad will happen when sending signals to it too early
-	// Also, just in case, we wait a sec
-	time.Sleep(1000 * time.Millisecond)
-}
-
-func (c *Cam) Snapshot() {
-	log.Println("Triggering snapshot...")
-	err := c.Cmd.Process.Signal(syscall.SIGUSR1)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	// Same problem as in setup - don't know when the picture got taken, just hope it went through faster than 500ms
-	time.Sleep(500 * time.Millisecond)
-}
-
-func (c *Cam) Kill() {
-	err := c.Cmd.Process.Signal(os.Kill)
+func transmitImg() {
+	cmd := exec.Command("scp", "serpens:~/pic.jpg", "./")
+	_, err := cmd.Output()
 	if err != nil {
 		log.Panic(err)
 	}
