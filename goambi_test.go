@@ -8,6 +8,26 @@ import (
 	"testing"
 )
 
+func TestPix(t *testing.T) {
+
+	file, err := os.Open("_test/pic2.jpg")
+	if err != nil {
+		t.Fatal("Testpic missing", err)
+	}
+	defer file.Close()
+
+	img, _, err := image.Decode(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bound := img.Bounds()
+	m := image.NewRGBA(bound)
+	draw.Draw(m, bound, img, bound.Min, draw.Src)
+
+	i := m.PixOffset(1, 0)
+	t.Log("==", i)
+}
+
 func TestComputeDominatorColors(t *testing.T) {
 
 	file, err := os.Open("_test/pic.jpg")
@@ -21,15 +41,25 @@ func TestComputeDominatorColors(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	colors := computeDominatorColors(&img)
+	bound := img.Bounds()
+	m := image.NewRGBA(bound)
+	draw.Draw(m, bound, img, bound.Min, draw.Src)
+
+	var x image.Image
+	x = m
+
+	colors := computeDominatorColors(&x)
 	if len(colors) == 0 {
 		t.Error("No colors returned")
+	}
+	if colors[0].R == 0 && colors[0].G == 0 && colors[0].B == 0 {
+		t.Error("First color is black. Expected something colorfull")
 	}
 }
 
 func BenchmarkComputeDominatorColors(b *testing.B) {
 
-	file, err := os.Open("_test/pic.jpg")
+	file, err := os.Open("_test/pic2.jpg")
 	if err != nil {
 		b.Fatal("Testpic missing", err)
 	}

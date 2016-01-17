@@ -1,0 +1,3 @@
+PASS
+BenchmarkComputeDominatorColors-8	      50	  62526601 ns/op
+ok  	github.com/RandomByte/goambi-light	3.301s

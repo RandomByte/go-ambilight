@@ -34,10 +34,10 @@ func main() {
 
 	for {
 		select {
-		case <-time.After(500 * time.Millisecond):
-			// loop(&cam)
+		case <-time.After(1 * time.Millisecond):
+			loop(&cam)
 		case s := <-sig:
-			log.Println("Got signal", s)
+			log.Println("Got signal:", s)
 			log.Println("Quitting...")
 			return
 		}
