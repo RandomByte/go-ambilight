@@ -58,7 +58,6 @@ func TestComputeDominatorColors(t *testing.T) {
 }
 
 func BenchmarkComputeDominatorColors(b *testing.B) {
-
 	file, err := os.Open("_test/pic2.jpg")
 	if err != nil {
 		b.Fatal("Testpic missing", err)
@@ -83,5 +82,14 @@ func BenchmarkComputeDominatorColors(b *testing.B) {
 			b.Error("No colors returned")
 		}
 	}
+}
 
+func BenchmarkLoadImageAndComputeDominatorColors(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		img := loadImage()
+		colors := computeDominatorColors(img)
+		if len(colors) == 0 {
+			b.Error("No colors returned")
+		}
+	}
 }

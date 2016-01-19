@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -23,6 +24,8 @@ type SubImager interface {
 }
 
 func main() {
+	log.Println(runtime.GOMAXPROCS(8))
+
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer signal.Stop(sig)
@@ -35,7 +38,7 @@ func main() {
 	for {
 		select {
 		case <-time.After(1 * time.Millisecond):
-			loop(&cam)
+			loop()
 		case s := <-sig:
 			log.Println("Got signal:", s)
 			log.Println("Quitting...")
@@ -44,13 +47,23 @@ func main() {
 	}
 }
 
-func loop(cam *Cam) {
-	// cam.Snapshot()
+func loop() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered", r)
+		}
+	}()
+	img := loadImage()
+	colors := computeDominatorColors(img)
+	log.Println(colors)
 
+	sendToServer(colors)
+}
+
+func loadImage() *image.Image {
 	file, err := os.Open("pic.jpg")
 	if err != nil {
-		log.Println("No picture found - skipping loop", err)
-		return
+		log.Panic("No picture found", err)
 	}
 	defer file.Close()
 
@@ -59,16 +72,11 @@ func loop(cam *Cam) {
 		log.Panic(err)
 	}
 	bound := img.Bounds()
-	m := image.NewRGBA(bound)
-	draw.Draw(m, bound, img, bound.Min, draw.Src)
+	rgbaImg := image.NewRGBA(bound)
+	draw.Draw(rgbaImg, bound, img, bound.Min, draw.Src)
 
-	var x image.Image
-	x = m
-
-	colors := computeDominatorColors(&x)
-	log.Println(colors)
-
-	sendToServer(colors)
+	var ret image.Image = rgbaImg
+	return &ret
 }
 
 func computeDominatorColors(img *image.Image) [6]color.RGBA {
