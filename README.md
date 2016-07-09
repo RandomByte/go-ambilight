@@ -2,6 +2,8 @@
 
 Raspberry pi + camera = UDP packets of dominant colors out of six defined sections of the camera picture
 
+Work in progress...
+
 `````
 	              A         B         A
 	    ----- -----------------------------
