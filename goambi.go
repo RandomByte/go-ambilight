@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/RandomByte/dominantcolor"
+	"github.com/RandomByte/colorfinder"
 	"image"
 	"image/color"
 	"image/draw"
@@ -145,7 +145,7 @@ func computeDominatorColors(img *image.Image) [6]color.RGBA {
 }
 
 func processArea(area image.Image, processed chan color.RGBA) {
-	color := dominantcolor.Find(area)
+	color := colorfinder.Find(area.(*image.RGBA))
 	processed <- color
 }
 

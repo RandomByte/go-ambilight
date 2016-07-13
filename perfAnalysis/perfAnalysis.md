@@ -30,3 +30,17 @@ Baseline: Converting YCbCr image to RGBA: **-20.58%** (cpu-1 to cpu0)
 ### Learned
 - GOMAXPROCS default is set to the count of CPUs available on the current system
 - Benchmark results are tied to the CPU count (e.g. can't compare a run on two cores to a run on four) - the number after the Benchmark name indicates the count of CPUs used for the benchmark (which is defined by GOMAXPROCS)
+
+
+## Performance analysis part II (13th July)
+Same tooling
+
+
+
+### BenchmarkComputeDominatorColors
+    go test -v -run=^$ -bench=^BenchmarkComputeDominatorColors$ -benchtime=2s -cpuprofile=prof.cpu | tee perfAnalysis/partII/cpuX
+    benchcmp perfAnalysis/partII/cpu0 perfAnalysis/partII/cpu1
+
+Baseline: cpu0 - dominantcolor
+
+1. dominantcolor -> colorfinder: **-91.33%** (cpu0 to cpu1)
