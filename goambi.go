@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/RandomByte/colorfinder"
@@ -175,17 +174,22 @@ func getScreen(img *image.Image) *image.Image {
 }
 
 func sendToServer(colors [6]color.RGBA) {
+	var payload string
+
+	// Put together our payload. Will look something like this:
+	// /0:R070G045B028/1:R068G046B031/2:R066G044B029/3:R064G039B030/4:R064G040B028/5:R070G048B031
+	// For six areas, it'll always have a length of 90 chars.
+	for i := 0; i < len(colors); i++ {
+		payload += fmt.Sprintf("/%v:R%03dG%03dB%03d", i, colors[i].R, colors[i].G, colors[i].B)
+	}
+
 	conn, err := net.Dial("udp", targetAddress)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	json, err := json.Marshal(colors)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Fprintf(conn, string(json))
+
+	fmt.Fprintf(conn, payload)
 	conn.Close()
 }
 
