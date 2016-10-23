@@ -209,6 +209,8 @@ func (c *Cam) Setup() {
 }
 
 func (c *Cam) Snapshot() {
+	// TODO this function got replaced by setting raspistill into timelapse mode for now
+	// This function only remains in case issues with the timelapse mode appear
 	log.Println("Triggering snapshot...")
 	err := c.Cmd.Process.Signal(syscall.SIGUSR1)
 	if err != nil {
