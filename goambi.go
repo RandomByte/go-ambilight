@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/RandomByte/colorfinder"
 	"image"
@@ -15,15 +16,31 @@ import (
 	"os/exec"
 	"os/signal"
 	"runtime"
+	"strconv"
 	"syscall"
 	"time"
 )
+
+var targetAddress string
 
 type SubImager interface {
 	SubImage(r image.Rectangle) image.Image
 }
 
 func main() {
+
+	ip := flag.String("ip", "", "Target IP")
+	port := flag.Int("port", 0, "Target port")
+	flag.Parse()
+
+	if *ip == "" || *port == 0 {
+		log.Println("Missing target IP or port")
+		return
+	}
+
+	targetAddress = *ip + ":" + strconv.Itoa(*port)
+	log.Println("Target address:", targetAddress)
+
 	log.Println(runtime.GOMAXPROCS(8))
 
 	sig := make(chan os.Signal, 1)
@@ -137,7 +154,7 @@ func computeDominatorColors(img *image.Image) [6]color.RGBA {
 	}
 
 	for i := 0; i < len(areas); i++ {
-		log.Println("Processed", i)
+		log.Println("Processed area", i+1)
 		colors[i] = <-processed
 	}
 
@@ -158,7 +175,7 @@ func getScreen(img *image.Image) *image.Image {
 }
 
 func sendToServer(colors [6]color.RGBA) {
-	conn, err := net.Dial("udp", "192.168.2.6:64001")
+	conn, err := net.Dial("udp", targetAddress)
 	if err != nil {
 		fmt.Println(err)
 		return
