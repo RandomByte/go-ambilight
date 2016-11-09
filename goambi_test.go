@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/draw"
 	_ "image/jpeg"
@@ -49,11 +50,17 @@ func TestComputeDominatorColors(t *testing.T) {
 	x = m
 
 	colors := computeDominatorColors(&x)
+
 	if len(colors) == 0 {
 		t.Error("No colors returned")
 	}
+	fmt.Println(colors[0])
 	if colors[0].R == 0 && colors[0].G == 0 && colors[0].B == 0 {
-		t.Error("First color is black. Expected something colorfull")
+		t.Error("Area #0 is black. Expected something colorful")
+	}
+	fmt.Println(colors[1])
+	if colors[1].R < 200 || colors[1].G > 180 || colors[1].B > 180 {
+		t.Error("Area #1 should be mainly red")
 	}
 }
 
