@@ -137,8 +137,9 @@ func computeDominatorColors(img *image.Image) [6]color.RGBA {
 	areaRect = image.Rect(bounds.Min.X+xA, bounds.Min.Y, bounds.Max.X-xA, bounds.Min.Y+y)
 	areas[2] = screen.(SubImager).SubImage(areaRect)
 
-	areaRect = image.Rect(bounds.Min.X+xA, bounds.Min.Y+y, bounds.Max.X-xA, bounds.Max.Y)
-	areas[3] = screen.(SubImager).SubImage(areaRect)
+	// Ignore area #3
+	// areaRect = image.Rect(bounds.Min.X+xA, bounds.Min.Y+y, bounds.Max.X-xA, bounds.Max.Y)
+	// areas[3] = screen.(SubImager).SubImage(areaRect)
 
 	areaRect = image.Rect(bounds.Max.X-xA, bounds.Min.Y, bounds.Max.X, bounds.Min.Y+y)
 	areas[4] = screen.(SubImager).SubImage(areaRect)
@@ -149,11 +150,17 @@ func computeDominatorColors(img *image.Image) [6]color.RGBA {
 	processed := make(chan color.RGBA, 6)
 
 	for i := 0; i < len(areas); i++ {
+		if i == 3 { // Ignore area #3
+			continue
+		}
 		go processArea(areas[i], processed)
 	}
 
 	for i := 0; i < len(areas); i++ {
-		log.Println("Processed area", i+1)
+		if i == 3 { // Ignore area #3
+			continue
+		}
+		log.Println("Processed area", i)
 		colors[i] = <-processed
 	}
 
@@ -180,6 +187,10 @@ func sendToServer(colors [6]color.RGBA) {
 	// /0:R070G045B028/1:R068G046B031/2:R066G044B029/3:R064G039B030/4:R064G040B028/5:R070G048B031
 	// For six areas, it'll always have a length of 90 chars.
 	for i := 0; i < len(colors); i++ {
+		if i == 3 { // Ignore area #3
+			payload += "/3:R000G000B000"
+			continue
+		}
 		payload += fmt.Sprintf("/%v:R%03dG%03dB%03d", i, colors[i].R, colors[i].G, colors[i].B)
 	}
 
