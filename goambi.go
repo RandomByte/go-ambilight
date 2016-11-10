@@ -211,7 +211,7 @@ type Cam struct {
 func (c *Cam) Setup() {
 	// Start raspistill in signal mode
 	log.Println("Initializing raspistill process...")
-	c.Cmd = exec.Command("raspistill", "-v", "-n", "-s", "-t", "0", "--thumb", "none", "-o", "pic.jpg", "-roi", "0.51,0.35,0.33,0.25", "-w", "648", "-h", "486", "-tl", "0", "-bm", "-mm", "spot")
+	c.Cmd = exec.Command("raspistill", "-v", "-n", "-t", "0", "--thumb", "none", "-o", "pic.jpg", "-roi", "0.51,0.35,0.33,0.24", "-w", "648", "-h", "486", "-tl", "0", "-bm", "-mm", "spot", "-ex", "spotlight", "-awb", "shade", "-ISO", "100")
 
 	err := c.Cmd.Start()
 	if err != nil {
