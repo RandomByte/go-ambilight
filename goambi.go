@@ -21,6 +21,7 @@ import (
 )
 
 var targetAddress string
+var lastColors [6]color.RGBA
 
 type SubImager interface {
 	SubImage(r image.Rectangle) image.Image
@@ -70,8 +71,9 @@ func loop() {
 		}
 	}()
 	img := loadImage()
-	colors := computeDominatorColors(img)
+	colors := computeDominatorColors(img, lastColors)
 	log.Println(colors)
+	lastColors = colors
 
 	sendToServer(colors)
 }
@@ -95,7 +97,7 @@ func loadImage() *image.Image {
 	return &ret
 }
 
-func computeDominatorColors(img *image.Image) [6]color.RGBA {
+func computeDominatorColors(img *image.Image, lastColors [6]color.RGBA) [6]color.RGBA {
 	log.Println("Computing dominant colors...")
 	screen := *getScreen(img)
 
@@ -153,7 +155,7 @@ func computeDominatorColors(img *image.Image) [6]color.RGBA {
 		if i == 3 { // Ignore area #3
 			continue
 		}
-		go processArea(areas[i], processed)
+		go processArea(areas[i], lastColors[i], processed)
 	}
 
 	for i := 0; i < len(areas); i++ {
@@ -167,9 +169,34 @@ func computeDominatorColors(img *image.Image) [6]color.RGBA {
 	return colors
 }
 
-func processArea(area image.Image, processed chan color.RGBA) {
-	color := colorfinder.Find(area.(*image.RGBA))
-	processed <- color
+func processArea(area image.Image, lastColor color.RGBA, processed chan color.RGBA) {
+	newColor := colorfinder.Find(area.(*image.RGBA))
+	if lastColor != (color.RGBA{}) {
+		// Compare to last color
+		if getDifferenceOfInts(newColor.R, lastColor.R) < 10 {
+			// if newColor.R < lastColor.R {
+			log.Println("Prioritizing last red")
+			newColor.R = lastColor.R
+			// }
+		}
+		if getDifferenceOfInts(newColor.G, lastColor.G) < 10 {
+			// if newColor.G < lastColor.G {
+			log.Println("Prioritizing last green")
+			newColor.G = lastColor.G
+			// }
+		}
+		if getDifferenceOfInts(newColor.B, lastColor.B) < 10 {
+			// if newColor.B < lastColor.B {
+			log.Println("Prioritizing last blue")
+			newColor.B = lastColor.B
+			// }
+		}
+	}
+	processed <- newColor
+}
+
+func getDifferenceOfInts(x, y uint8) int {
+	return int(math.Abs(float64(x) - float64(y)))
 }
 
 func getScreen(img *image.Image) *image.Image {
