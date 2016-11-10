@@ -174,10 +174,6 @@ func processArea(area image.Image, processed chan color.RGBA) {
 
 func getScreen(img *image.Image) *image.Image {
 	return img
-	// Full res is 2592 x 1944  e.g. 1 / 2592 * x
-	// screenRect := image.Rect(1335, 747, 2184, 1231)
-	// screen := (*img).(SubImager).SubImage(screenRect)
-	// return &screen
 }
 
 func sendToServer(colors [6]color.RGBA) {
@@ -209,7 +205,7 @@ type Cam struct {
 }
 
 func (c *Cam) Setup() {
-	// Start raspistill in signal mode
+	// Start raspistill in timelapse + burst mode
 	log.Println("Initializing raspistill process...")
 	c.Cmd = exec.Command("raspistill", "-v", "-n", "-t", "0", "--thumb", "none", "-o", "pic.jpg", "-roi", "0.51,0.35,0.33,0.24", "-w", "648", "-h", "486", "-tl", "0", "-bm", "-mm", "spot", "-ex", "spotlight", "-awb", "shade", "-ISO", "100")
 
@@ -217,23 +213,10 @@ func (c *Cam) Setup() {
 	if err != nil {
 		log.Panic(err)
 	}
-	// Should wait for "Waiting for SIGUSR1" in the stdout - but was unable to get it running :(
-	// So we just assume that nothing bad will happen when sending signals to it too early
+	// Should wait for something in the stdout - but was unable to get it working :(
+	// So we just assume that nothing bad will happen when proceeding too soon
 	// Also, just in case, we wait a sec
 	time.Sleep(1000 * time.Millisecond)
-}
-
-func (c *Cam) Snapshot() {
-	// TODO this function got replaced by setting raspistill into timelapse mode for now
-	// This function only remains in case issues with the timelapse mode appear
-	log.Println("Triggering snapshot...")
-	err := c.Cmd.Process.Signal(syscall.SIGUSR1)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	// Same problem as in setup - don't know when the picture got taken, just hope it went through faster than 500ms
-	time.Sleep(500 * time.Millisecond)
 }
 
 func (c *Cam) Kill() {
