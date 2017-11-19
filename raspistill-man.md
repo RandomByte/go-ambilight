@@ -1,7 +1,10 @@
-````
+### Sample command
+```
 raspistill -v -n -t 0 -q 80 --thumb none -o picm.jpg -roi 0.51,0.35,0.33,0.24 -w 648 -h 486 -tl 0 -bm -mm spot -ex spotlight -awb shade -ISO 100
-````
+```
 
+### Man page
+```
 Runs camera for specific time, and take JPG capture at end if requested
 
 usage: raspistill [options]
@@ -93,3 +96,4 @@ Preview parameter commands
 
 -gs, --glscene  : GL scene square,teapot,mirror,yuv,sobel
 -gw, --glwin    : GL window settings <'x,y,w,h'>
+```
